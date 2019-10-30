@@ -1,0 +1,27 @@
+{
+  "name": "restlr",
+  "version": "0.0.1",
+  "description": "A REST REPL for fun",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "tap",
+    "testw": "npm t -- --watch"
+  },
+  "bin": "src/index.js",
+  "keywords": [
+    "rest",
+    "repl",
+    "cli"
+  ],
+  "homepage": "https://restlr.io",
+  "author": "Philipp Kursawe <phil.kursawe@gmail.com> (https://pke.github.io/)",
+  "license": "MIT",
+  "dependencies": {
+    "enquirer": "2.3.2",
+    "got": "10.0.0-alpha.1.1"
+  },
+  "devDependencies": {
+    "eslint": "6.6.0",
+    "tap": "14.8.2"
+  }
+}

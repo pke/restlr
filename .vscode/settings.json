@@ -1,0 +1,11 @@
+{
+  "spellright.groupDictionaries": false,
+  "spellright.language": [
+    "en-GB"
+  ],
+  "spellright.documentTypes": [
+    "markdown",
+    "latex",
+    "plaintext"
+  ]
+}
