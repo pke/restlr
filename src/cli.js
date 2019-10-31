@@ -108,26 +108,52 @@ async function requestToPrompt(request) {
   }
 }
 
-(async () => {
-  let request = client.get("http://htpc:1337/hywit/void"/*"https://pastebin.com/raw/B7KHJL4r"*/)
-  let nextPrompt = await requestToPrompt(request)
+const errorPrompt = (error, action) => ({
+  type: "select",
+  name: "next",
+  message: error.message,
+  initial: "retry",
+  choices: [
+    { name: "retry", message: "Retry" },
+    { name: "quit", message: "Quit" }
+  ],
+  result(value) {
+    if (value === "retry") {
+      return action
+    }
+    return {
+      quit: true
+    }
+  }
+})
 
+// https://pastebin.com/raw/B7KHJL4r
+
+;(async () => {
+  let action = {
+    request: {
+      href: "http://htpc:1337/hywit/void"
+    }
+  }
+  
+  let nextPrompt
   do {
     try {
-      const next = await nextPrompt
-      if (next.request) {
-        const { method, href, form } = next.request
+      if (action.request) {
+        const { method = "get", href, form } = action.request
         nextPrompt = requestToPrompt(client[method.toLowerCase()](href, {
           form
         }))
-      } else if (next.prompt) {
-        nextPrompt = next.prompt
+      } else if (action.prompt) {
+        nextPrompt = prompt(action.prompt)
+      } else if (action.quit) {
+        nextPrompt = null
       }
+      action = await nextPrompt
     } catch (e) {
-      console.error(e)
-      // Have no idea how to recover from errors for now
-      // Going back one prompt or redoing an action?
-      break
+      nextPrompt = prompt(errorPrompt(e, action))
+      const { next } = await nextPrompt
+      action = next
     }
   }while (nextPrompt)
 })()

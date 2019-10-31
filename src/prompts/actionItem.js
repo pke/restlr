@@ -11,7 +11,7 @@ const actionRequest = (action, formValues) => ({
 
 const actionPrompt = action => {
   console.log(JSON.stringify(action, null, 2))
-  return prompt({
+  return {
     type: "form",
     name: "request",
     message: action.title || action.name,
@@ -19,7 +19,7 @@ const actionPrompt = action => {
     result(values) {
       return actionRequest(action, values)
     }
-  })
+  }
 }
 
 module.exports = function actionItem(action) {

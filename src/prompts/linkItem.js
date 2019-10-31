@@ -6,7 +6,6 @@ module.exports = function linkItem(item) {
     result() {
       return {
         request: {
-          method: "get",
           href: item.href
         }
       }
