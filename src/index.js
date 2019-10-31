@@ -3,22 +3,50 @@
 const { prompt } = require("enquirer")
 const got = require("got")
 
-const visitItems = require("./visitItems")
 const mapItems = require("./mapItems")
 const countItems = require("./countItems")
 const actionItem = require("./prompts/actionItem")
 const linkItem = require("./prompts/linkItem")
 const entityItem = require("./prompts/entityItem")
-const fieldItem = require("./prompts/fieldItem")
+
+const fixHref = (host, href) => (
+  href.replace(/(https?):\/\/localhost(:?:\d+)?/gi, `$1://${host}`)
+)
+
+function fixLocationHeader(response) {
+  if (response.headers.location) {
+    const host = response.req.getHeader("host")
+    response.headers.location = fixHref(host, response.headers.location)
+  }
+  return response
+}
 
 const client = got.extend({
   hooks: {
     beforeRequest: [
       options => {
+        options.followRedirect = false
         options.headers["Accept"] = "application/vnd.siren+json"
       }
+    ],
+    beforeRedirect: [
+      (options, response) => {
+        fixLocationHeader(response)
+        options.href = response.headers.location
+      }
+    ],
+    afterResponse: [
+      fixLocationHeader,
+      (response) => {
+        const host = response.req.getHeader("host")
+        if (response.body) {
+          response.body = fixHref(host, response.body)
+        }
+        return response
+      }
     ]
-  }
+  },
+  mutableDefaults: true
 })
 
 function choiceItem(part, item) {
@@ -29,7 +57,7 @@ function choiceItem(part, item) {
   }
 }
 
-function choices(response, part) {
+function partChoices(response, part) {
   const items = response[part]
   const count = countItems(items)
   if (count) {
@@ -41,56 +69,65 @@ function choices(response, part) {
   } else {
     return {
       name: part,
-      value: part
+      value: part,
+      disabled: true
     }
   }
 }
 
-const fixHref = (response, href) => href.replace(/http:\/\/localhost:1337/gi, `http://${response.req.getHeader("host")}`)
+async function requestToPrompt(request) {
+  const response = await request
+  console.log(`${response.statusCode} ${response.statusMessage}`)
+  //console.log(response.headers["content-type"])
+  if (response.statusCode === 201) {
+    return requestToPrompt(client.get(response.headers.location))
+  } else {
+    const json = JSON.parse(response.body || "{}")
+    console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
+    const choices = [
+      partChoices(json, "actions"),
+      partChoices(json, "links"),
+      partChoices(json, "entities"),
+    ]
+    response.headers.location && choices.push(
+      linkItem({
+        title: "Location",
+        href: response.headers.location
+      })
+    )
 
-const actionPrompt = action => prompt({
-  type: "form",
-  name: "action",
-  message: action.title || action.name,
-  choices: visitItems("filter", action.fields, item => item.type !== "hidden").map(fieldItem),
-  result(value) {
-    return client[action.method.toLowerCase()](action.href, {
-      form: value
+    const { next } = await prompt({
+      type: "select",
+      name: "next",
+      choices,
+      result() {
+        return this.selected.result()
+      }
     })
+    return next
   }
-})
+}
 
-
-;(async () => {
-  
+(async () => {
   let request = client.get("http://htpc:1337/hywit/void"/*"https://pastebin.com/raw/B7KHJL4r"*/)
-  let running = true
+  let nextPrompt = await requestToPrompt(request)
 
   do {
     try {
-      const response = await request
-      console.log(response.statusMessage)
-      //console.log(response.headers["content-type"])
-      if (response.statusCode === 201) {
-        request = client.get(fixHref(response, response.headers.location))
-      } else {
-        const body = fixHref(response, response.body)
-        const json = JSON.parse(body)
-        console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
-        await prompt({
-          type: "select",
-          choices: [
-            choices(json, "actions"),
-            choices(json, "links"),
-            choices(json, "entities"),
-          ]
-        })
-        const { action } = await actionPrompt(json.actions[0])
-        request = action
+      const next = await nextPrompt
+      if (next.request) {
+        const { method, href, form } = next.request
+        nextPrompt = requestToPrompt(client[method.toLowerCase()](href, {
+          form
+        }))
+      } else if (next.prompt) {
+        nextPrompt = next.prompt
       }
     } catch (e) {
       console.error(e)
+      // Have no idea how to recover from errors for now
+      // Going back one prompt or redoing an action?
       break
     }
-  }while (running)
+  }while (nextPrompt)
 })()

@@ -1,4 +1,4 @@
-module.exports = function visitItems(method, arrayOrObject, visitor) {
+module.exports = function visitItems(method, arrayOrObject = [], visitor) {
   if (Array.isArray(arrayOrObject)) {
     return arrayOrObject[method](visitor)
   } else if (typeof arrayOrObject === "object") {
