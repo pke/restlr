@@ -115,11 +115,17 @@ const errorPrompt = (error, action) => ({
   initial: "retry",
   choices: [
     { name: "retry", message: "Retry" },
+    { name: "debug", message: "Debug" },
     { name: "quit", message: "Quit" }
   ],
   result(value) {
     if (value === "retry") {
       return action
+    }
+    if (value === "debug") {
+      return {
+        debug: action
+      }
     }
     return {
       quit: true
@@ -140,6 +146,9 @@ const errorPrompt = (error, action) => ({
   do {
     try {
       if (action.request) {
+        if (!nextPrompt) {
+          throw new Error("Connection refused")
+        }
         const { method = "get", href, form } = action.request
         nextPrompt = requestToPrompt(client[method.toLowerCase()](href, {
           form
@@ -148,6 +157,10 @@ const errorPrompt = (error, action) => ({
         nextPrompt = prompt(action.prompt)
       } else if (action.quit) {
         nextPrompt = null
+      } else if (action.debug) {
+        action = action.debug
+        debugger
+        continue
       }
       action = await nextPrompt
     } catch (e) {
