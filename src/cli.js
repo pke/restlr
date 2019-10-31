@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
+// eslint-disable-next-line node/shebang
 const { prompt } = require("enquirer")
 const got = require("got")
 
+const inDebugMode = require("./inDebugMode")
+const noEmptyArray = require("./noEmptyArray")
 const mapItems = require("./mapItems")
-const countItems = require("./countItems")
-const actionItem = require("./prompts/actionItem")
-const linkItem = require("./prompts/linkItem")
-const entityItem = require("./prompts/entityItem")
+const resourcePrompt = require("./prompts/resourcePrompt")
 
 const fixHref = (host, href) => (
   href.replace(/(https?):\/\/localhost(:?:\d+)?/gi, `$1://${host}`)
@@ -49,32 +49,6 @@ const client = got.extend({
   mutableDefaults: true
 })
 
-function choiceItem(part, item) {
-  switch (part) {
-  case "actions": return actionItem(item)
-  case "links": return linkItem(item)
-  case "entities": return entityItem(item)
-  }
-}
-
-function partChoices(response, part) {
-  const items = response[part]
-  const count = countItems(items)
-  if (count) {
-    return {
-      name: part,
-      message: `${part} (${count})`,
-      choices: mapItems(items, choiceItem.bind(this, part))
-    }
-  } else {
-    return {
-      name: part,
-      value: part,
-      disabled: true
-    }
-  }
-}
-
 async function requestToPrompt(request) {
   const response = await request
   console.log(`${response.statusCode} ${response.statusMessage}`)
@@ -84,40 +58,22 @@ async function requestToPrompt(request) {
   } else {
     const json = JSON.parse(response.body || "{}")
     console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
-    const choices = [
-      partChoices(json, "actions"),
-      partChoices(json, "links"),
-      partChoices(json, "entities"),
-    ]
-    response.headers.location && choices.push(
-      linkItem({
-        title: "Location",
-        href: response.headers.location
-      })
-    )
-
-    const { next } = await prompt({
-      type: "select",
-      name: "next",
-      choices,
-      result() {
-        return this.selected.result()
-      }
-    })
-    return next
+    return {
+      prompt: resourcePrompt(json, response.headers.location)
+    }
   }
 }
 
 const errorPrompt = (error, action) => ({
   type: "select",
-  name: "next",
+  name: "nextAction",
   message: error.message,
   initial: "retry",
-  choices: [
+  choices: noEmptyArray(
     { name: "retry", message: "Retry" },
-    { name: "debug", message: "Debug" },
+    inDebugMode && { name: "debug", message: "Debug" },
     { name: "quit", message: "Quit" }
-  ],
+  ),
   result(value) {
     if (value === "retry") {
       return action
@@ -138,35 +94,40 @@ const errorPrompt = (error, action) => ({
 ;(async () => {
   let action = {
     request: {
-      href: "http://htpc:1337/hywit/void"
+      href: "https://pastebin.com/raw/C9TTYxHT"// "http://htpc:1337/hywit/void"
     }
   }
-  
-  let nextPrompt
+
   do {
     try {
       if (action.request) {
-        if (!nextPrompt) {
+        /*if (!nextPrompt) {
           throw new Error("Connection refused")
-        }
+        }*/
         const { method = "get", href, form } = action.request
-        nextPrompt = requestToPrompt(client[method.toLowerCase()](href, {
+        action = await requestToPrompt(client[method.toLowerCase()](href, {
           form
         }))
       } else if (action.prompt) {
-        nextPrompt = prompt(action.prompt)
+        const { nextAction } = await prompt({
+          ...action.prompt,
+          name: "nextAction"
+        })
+        action = nextAction
       } else if (action.quit) {
-        nextPrompt = null
+        action = null
       } else if (action.debug) {
+        // Retry the errornous action by default
         action = action.debug
+        // eslint-disable-next-line no-debugger
         debugger
         continue
+      } else {
+        // eslint-disable-next-line no-debugger
+        debugger
       }
-      action = await nextPrompt
     } catch (e) {
-      nextPrompt = prompt(errorPrompt(e, action))
-      const { next } = await nextPrompt
-      action = next
+      action = errorPrompt(e, action)
     }
-  }while (nextPrompt)
+  }while (action)
 })()

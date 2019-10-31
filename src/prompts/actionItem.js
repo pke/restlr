@@ -1,5 +1,3 @@
-const { prompt } = require("enquirer")
-
 const visitItems = require("../visitItems")
 const fieldItem = require("./fieldItem")
 
@@ -13,11 +11,12 @@ const actionPrompt = action => {
   console.log(JSON.stringify(action, null, 2))
   return {
     type: "form",
-    name: "request",
     message: action.title || action.name,
     choices: visitItems("filter", action.fields, item => item.type !== "hidden").map(fieldItem),
     result(values) {
-      return actionRequest(action, values)
+      return {
+        request: actionRequest(action, values)
+      }
     }
   }
 }

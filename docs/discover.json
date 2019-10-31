@@ -1,0 +1,71 @@
+{
+  "$schema": "./siren.schema.json",
+  "title": "RESTlr Example APIs for your pleasure",
+  "properties": {
+    "lastUpdated": "20191031",
+    "description": "A curated list of APIs to play around with"
+  },
+  "entities": [
+    {
+      "title": "Games",
+      "rel": [
+        "collection",
+        "first"
+      ],
+      "entities": [
+        {
+          "title": "Hypermedia in the Wizard's Tower",
+          "rel": [
+            "item", "first"
+          ],
+          "links": [
+            {
+              "title": "Play",
+              "rel": [
+                "index"
+              ],
+              "href": "http://hyperwizard.azurewebsites.net/hywit/void"
+            },
+            {
+              "title": "Author: Einar W. Høst",
+              "rel": [
+                "author"
+              ],
+              "href": "https://github.com/einarwh"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SIREN Examples",
+      "rel": [
+        "collection",
+        "last"
+      ],
+      "entities": [
+        {
+          "title": "SIREN example from its README file",
+          "rel": [
+            "item", "first"
+          ],
+          "links": [
+            {
+              "rel": ["index"],
+              "href": "https://pastebin.com/raw/B7KHJL4r"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "title": "Latest version of this registry",
+      "href": "https://restlr.net/discover.json",
+      "rel": [
+        "self"
+      ]
+    }
+  ]
+}

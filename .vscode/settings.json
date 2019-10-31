@@ -7,5 +7,19 @@
     "markdown",
     "latex",
     "plaintext"
+  ],
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "discover.json"
+      ],
+      "url": "/siren.schema.json"
+    },
+    {
+      "fileMatch": [
+        "docs/_config.yaml"
+      ],
+      "url": "jekyll"
+    }
   ]
 }
