@@ -15,12 +15,17 @@
     "repl",
     "cli"
   ],
+  "engines": {
+    "node": ">=8.3.0"
+  },
   "homepage": "https://restlr.net",
   "author": "Philipp Kursawe <phil.kursawe@gmail.com> (https://pke.github.io/)",
   "license": "MIT",
   "dependencies": {
+    "chalk": "2.4.2",
     "enquirer": "2.3.2",
-    "got": "10.0.0-alpha.1.1"
+    "got": "10.0.0-alpha.1.1",
+    "ora": "3.4.0"
   },
   "devDependencies": {
     "eslint": "6.6.0",

@@ -1,0 +1,18 @@
+{
+  "name": "waitp",
+  "version": "1.0.0",
+  "description": "Wait for timeout and resolve with arguments",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap"
+  },
+  "keywords": [
+    "promise",
+    "wait",
+    "sleep",
+    "await",
+    "timeout"
+  ],
+  "author": "Philipp Kursawe <phil.kursawe@gmail.com> (https://pke.github.io/)",
+  "license": "MIT"
+}

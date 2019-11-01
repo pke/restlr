@@ -8,7 +8,7 @@ const actionRequest = (action, formValues) => ({
 })
 
 const actionPrompt = action => {
-  console.log(JSON.stringify(action, null, 2))
+  //console.log(JSON.stringify(action, null, 2))
   return {
     type: "form",
     message: action.title || action.name,
