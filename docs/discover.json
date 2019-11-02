@@ -24,6 +24,7 @@
               "rel": [
                 "index"
               ],
+              "type": "application/vnd.siren+json",
               "href": "http://hyperwizard.azurewebsites.net/hywit/void"
             },
             {
