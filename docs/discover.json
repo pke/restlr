@@ -31,7 +31,8 @@
               "rel": [
                 "author"
               ],
-              "href": "https://github.com/einarwh"
+              "type": "application/vnd.github.v3+json",
+              "href": "https://api.github.com/users/einarwh"
             }
           ]
         }
