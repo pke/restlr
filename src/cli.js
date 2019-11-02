@@ -2,16 +2,11 @@
 
 // eslint-disable-next-line node/shebang
 const { prompt } = require("enquirer")
-const got = require("got")
 const ora = require("ora")
-const chalk = require("chalk")
 
-const waitp = require("../waitp")
-const inDebugMode = require("./inDebugMode")
-const noEmptyArray = require("./noEmptyArray")
 const mapItems = require("./mapItems")
 const resourcePrompt = require("./prompts/resourcePrompt")
-const fixLocalhostLinks = require("./fixLocalhostLinks")
+const client = require("./client/client")
 
 const cpromise = (promise, defaultResult) => {
   let outerReject
@@ -28,46 +23,35 @@ const cpromise = (promise, defaultResult) => {
   return wrappedPromise
 }
 
-
-function fixLocationHeader(response) {
-  if (response.headers.location) {
-    const host = response.req.getHeader("host")
-    response.headers.location = fixLocalhostLinks(host, response.headers.location)
+const handlers = [
+  {
+    test: {
+      "content-type": "application/json",
+      "x-github-media-type": "github.v3; format=json"
+    },
+    handle(response) {
+      const { handleResponse } = require("../restlr-plugin-github")
+      return handleResponse(response)
+    }
   }
-  return response
+]
+
+function transformResponse(headers) {
+  for (let i=0; i<handlers.length; ++i) {
+    const handler = handlers[i]
+    if (Object.keys(handler.test).every(header => {
+      const value = headers[header] || ""
+      return value.match(handler.test[header])
+    })) {
+      return handler.handle
+    }
+  }
+
+  return (response) => response
 }
 
-const client = got.extend({
-  hooks: {
-    beforeRequest: [
-      options => {
-        // We want to have total control over redirects
-        options.followRedirect = false
-        options.headers["Accept"] = "application/vnd.siren+json"
-      }
-    ],
-    beforeRedirect: [
-      (options, response) => {
-        fixLocationHeader(response)
-        options.href = response.headers.location
-      }
-    ],
-    afterResponse: [
-      fixLocationHeader,
-      (response) => {
-        const host = response.req.getHeader("host")
-        if (response.body) {
-          response.body = fixLocalhostLinks(host, response.body)
-        }
-        return response
-      }
-    ]
-  },
-  mutableDefaults: true
-})
-
-async function requestToPrompt(request) {
-  const { method = "get", href, form } = request
+async function handleRequestAction(request) {
+  const { method = "get", href, form, type } = request
   const spinnerText = `${method.toUpperCase()} ${href}...`
   const spinner = ora(spinnerText).start()
   /*const stillTrying = cpromise(
@@ -82,6 +66,9 @@ async function requestToPrompt(request) {
   try {
     //await waitp(5000)
     const response = await client[method.toLowerCase()](href, {
+      headers: {
+        "accept": type
+      },
       form
     })
     //stillTrying.cancel()
@@ -94,10 +81,10 @@ async function requestToPrompt(request) {
         }
       }
     } else {
-      const json = JSON.parse(response.body || "{}")
+      const json = transformResponse(response.headers)(JSON.parse(response.body || "{}"))
       console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
       return {
-        prompt: resourcePrompt(json, response.headers.location)
+        prompt: resourcePrompt(json, response.headers.location, request)
       }
     }
   } catch (e) {
@@ -106,51 +93,23 @@ async function requestToPrompt(request) {
   }
 }
 
-const errorPrompt = (error, action) => ({
-  prompt: {
-    type: "select",
-    name: "nextAction",
-    message: error.message,
-    initial: "retry",
-    choices: noEmptyArray(
-      { name: "retry", message: "Retry" },
-      inDebugMode && { name: "debug", message: "Break into Debugger" },
-      { name: "quit", message: "Quit" }
-    ),
-    result(value) {
-      if (value === "retry") {
-        return action
-      }
-      if (value === "debug") {
-        return {
-          debug: action
-        }
-      }
-      return {
-        quit: true
-      }
-    }
-  }
-})
-
 // https://pastebin.com/raw/B7KHJL4r
 
-//prompt.on("cancel", process.exit.bind(this, 0))
+function isCancel(e) {
+  return e === ""
+}
 
-;(async () => {
+(async () => {
   let action = {
     request: {
-      href: "https://pastebin.com/raw/C9TTYxHT"// "http://htpc:1337/hywit/void"
+      href: "https://restlr.net/discover.json" //"https://api.github.com/repos/pke/acts_as_bookable/forks" // "https://api.github.com/users/pke/repos"
     }
   }
 
   do {
     try {
       if (action.request) {
-        /*if (!nextPrompt) {
-          throw new Error("Connection refused")
-        }*/
-        action = await requestToPrompt(action.request)
+        action = await handleRequestAction(action.request)
       } else if (action.prompt) {
         const { nextAction } = await prompt({
           ...action.prompt,
@@ -159,6 +118,8 @@ const errorPrompt = (error, action) => ({
         action = nextAction
       } else if (action.quit) {
         action = null
+      } else if (action.back) {
+        throw ""
       } else if (action.debug) {
         // Retry the erroneous action by default
         action = action.debug
@@ -170,7 +131,13 @@ const errorPrompt = (error, action) => ({
         debugger
       }
     } catch (e) {
-      action = errorPrompt(e, action)
+      /*if (isCancel(e)) {
+        const nextAction = history.pop()
+        action = nextAction
+      } else*/ {
+        const errorPrompt = require("./prompts/errorPrompt")
+        action = errorPrompt(e, action)
+      }
     }
   }while (action)
 })()

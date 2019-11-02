@@ -1,0 +1,21 @@
+{
+  "name": "restlr-plugin-github",
+  "version": "1.0.0",
+  "description": "Transforms unstructured non-hypermedia GitHub responses to SIREN",
+  "main": "index.js",
+  "scripts": {
+    "test": "tap"
+  },
+  "keywords": [
+    "github",
+    "siren",
+    "restlr",
+    "plugin"
+  ],
+  "author": "Philipp Kursawe <phil.kursawe@gmail.com> (https://pke.github.io/)",
+  "license": "MIT",
+  "restlr": {
+    "content-type": "application/json",
+    "x-github-media-type": "github.v3; format=json"
+  }
+}

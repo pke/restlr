@@ -1,6 +1,6 @@
 const { t } = require("tap")
 
-const fixLocalhostLinks = require("../src/fixLocalhostLinks")
+const fixLocalhostLinks = require("../src/client/fixLocalhostLinks")
 
 t.test("Fix localhost", t => {
   t.plan(3)
