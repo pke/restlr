@@ -16,6 +16,7 @@
       "name": "Launch REPL",
       "program": "${workspaceFolder}\\src\\cli.js",
       "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
     }
   ]
 }

@@ -3,6 +3,7 @@
 // eslint-disable-next-line node/shebang
 const { prompt } = require("enquirer")
 const ora = require("ora")
+const parseLinkHeader = require("parse-link-header")
 
 const mapItems = require("./mapItems")
 const resourcePrompt = require("./prompts/resourcePrompt")
@@ -83,6 +84,13 @@ async function handleRequestAction(request) {
     } else {
       const json = transformResponse(response.headers)(JSON.parse(response.body || "{}"))
       console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
+      const headerLinks = 
+        Object.values(parseLinkHeader(response.headers.link))
+          .map(({url:href, rel}) => ({
+            href,
+            rel: [rel]
+          }))
+      json.links = (json.links || []).concat(headerLinks)
       return {
         prompt: resourcePrompt(json, response.headers.location, request)
       }
@@ -102,7 +110,7 @@ function isCancel(e) {
 (async () => {
   let action = {
     request: {
-      href: "https://restlr.net/discover.json" //"https://api.github.com/repos/pke/acts_as_bookable/forks" // "https://api.github.com/users/pke/repos"
+      href: "https://api.github.com/users/pke/repos" // "https://restlr.net/discover.json" //"https://api.github.com/repos/pke/acts_as_bookable/forks"
     }
   }
 
