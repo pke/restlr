@@ -57,24 +57,27 @@ async function handleRequestAction(request) {
     spinner.succeed(`${method.toUpperCase()} ${href} ${response.statusCode} ${response.statusMessage}`)
     //console.log(response.headers["content-type"])
     if (response.statusCode === 201) {
-      return {
-        request: {
-          href: response.headers.location
+      if (response.headers.location/* && options.followLocationHeader*/) {
+        return {
+          request: {
+            href: response.headers.location
+          }
         }
+      } else {
+        console.log("201 Response did not contain Location header.")
       }
-    } else {
-      const json = transformResponse(response.headers)(JSON.parse(response.body || "{}"))
-      console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
-      const headerLinks = 
-        Object.values(parseLinkHeader(response.headers.link) || {})
-          .map(({url:href, rel}) => ({
-            href,
-            rel: [rel]
-          }))
-      json.links = (json.links || []).concat(headerLinks)
-      return {
-        prompt: resourcePrompt(json, response.headers.location, request)
-      }
+    }
+    const json = transformResponse(response.headers)(JSON.parse(response.body || "{}"))
+    console.log(mapItems(json.properties || {}, (value, key) => `${key}: ${value}`).join("\n"))
+    const headerLinks = 
+      Object.values(parseLinkHeader(response.headers.link) || {})
+        .map(({url:href, rel}) => ({
+          href,
+          rel: [rel]
+        }))
+    json.links = (json.links || []).concat(headerLinks)
+    return {
+      prompt: resourcePrompt(json, response.headers.location, request)
     }
   } catch (e) {
     spinner.fail(e.message)
