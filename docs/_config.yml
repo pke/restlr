@@ -1,9 +1,8 @@
 title: RESTlr
 author: "Philipp Kursawe"
-baseurl:
 host: 0.0.0.0
 url: https://restlr.net
-email: phil.kursawe+restlr@gmail.com
+email: info@restlr.net
 markdown: kramdown
 kramdown:
   syntax_highlighter: rouge

@@ -22,3 +22,19 @@ Interactive and fun REPL for REST endpoint discovery written for node.js
 ## Installation
 
 > `npm i -g restlr`
+
+## Usage
+
+> `restlr <url>`
+
+Like:
+
+`restlr https://restlr.net/index.json`
+
+`restlr https://api.github.com/users/pke/repos`
+
+## Contribute
+
+You have a nice REST Hypermedia API and want to showcase it?
+
+Create a PR to add it to [docs/_data/apis.yaml](https://github.com/pke/restlr/tree/master/docs/_data/apis.yaml)

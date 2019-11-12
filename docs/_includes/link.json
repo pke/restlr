@@ -1,0 +1,13 @@
+{%- assign _rel = include.link.rel | split: "," -%}
+{% comment %}
+// Enforce save browsing
+// https://mathiasbynens.github.io/rel-noopener/
+{% endcomment %}
+{%- assign _rel = _rel | push: "noreferrer" -%}
+{%- assign _rel = _rel | push: "noopener" -%}
+{
+  "title": "{{link.title | default: link.href}}",
+  {%- include rel.json rel=_rel -%},
+  {%- if link.type %}"type": "{{link.type}}",{%- endif -%}
+  "href": "{{link.href}}"
+}

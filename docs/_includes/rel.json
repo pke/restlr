@@ -1,0 +1,7 @@
+{%- assign _rels = include.rel | uniq -%}
+"rel": [
+  {%- for rel in _rels -%}
+    "{{rel}}"
+    {%- unless forloop.last -%},{%- endunless -%}
+  {%- endfor -%}
+]

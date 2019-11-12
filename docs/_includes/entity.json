@@ -1,0 +1,26 @@
+{%- assign items = include.items %}
+{%- assign entity = include.entity %}
+{%- assign rel = include.rel | default: "" | split: "," -%}
+{%- if items.size -%}
+  {%- assign rel = rel | push: "collection" -%}
+{%- endif -%}
+{%- if include.first -%}{%- assign rel = rel | push : "first" -%}{%- endif -%}
+{%- if include.last -%}{%- assign rel = rel | push: "last" -%}{%- endif -%}
+{
+  "title": "{{entity.title}}",
+  {%- include rel.json rel=rel -%}
+  {%- if entity.links -%},"links": [
+    {%- for link in entity.links -%}
+      {% include link.json link=link %}
+      {%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  ]
+  {%- endif -%}
+  {%- if items -%},"entities": [
+    {% for item in items %}
+      {%- include entity.json entity=item rel="item" last=forloop.last first=forloop.first -%}
+      {% unless forloop.last %},{% endunless %}
+    {% endfor %}
+  ]
+  {%- endif -%}
+}
