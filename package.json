@@ -1,6 +1,6 @@
 {
   "name": "restlr",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A REST REPL for fun",
   "repository": "pke/restlr",
   "main": "src/index.js",
