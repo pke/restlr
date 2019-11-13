@@ -1,0 +1,22 @@
+---
+# SIREN layout
+---
+{
+  "$schema": "./siren.schema.json",
+  "title": "{{page.title}}",
+{{content}},
+  "links": [
+    {
+      "title": "Latest version of this registry",
+      "href": "{{page.url | absolute_url }}",
+      "rel": [
+        "self", "current", "latest-version"
+      ]
+    },
+    {
+      "title": "Email the author",
+      "rel": ["author"],
+      "href": "mailto:{{site.email}}"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+{%- assign print = include.value or include.string -%}
+{%if print %}"{{include.key}}":{%if include.string %}"{{include.string}}"{% else %}{{include.value}}{% endif %}{% unless include.last%},{% endunless %}{% endif %}

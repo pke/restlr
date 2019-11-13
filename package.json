@@ -1,15 +1,15 @@
 {
   "name": "restlr",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A REST REPL for fun",
   "repository": "pke/restlr",
-  "main": "src/index.js",
+  "main": "src/cli.js",
   "scripts": {
     "start": "src/cli.js",
     "test": "tap",
     "testw": "npm t -- --watch"
   },
-  "bin": "src/index.js",
+  "bin": "src/cli.js",
   "keywords": [
     "rest",
     "repl",

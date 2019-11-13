@@ -1,0 +1,6 @@
+{%- assign categories = site.data.apis | group_by: "category" | sort: "name" -%}
+{%- for category in categories -%}
+  {%- assign item = site.data.categories[category.name] -%}
+  {%- include entity.json entity=item items=category.items first=forloop.first last=forloop.last -%}
+  {% unless forloop.last %},{% endunless %}
+{%- endfor -%}

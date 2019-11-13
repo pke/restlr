@@ -1,0 +1,19 @@
+- title: Hypermedia in the Wizard's Tower
+  category: games
+  links:
+    - title: Play
+      type: application/vnd.siren+json
+      href: http://hyperwizard.azurewebsites.net/hywit/void
+    - title: "Author: Einar W. Høst"
+      type: application/vnd.github.v3+json
+      href: https://api.github.com/users/einarwh
+- title: SIREN example from its README file
+  category: examples
+  links:
+    - rel: index
+      href: https://pastebin.com/raw/B7KHJL4r
+- title: GitHub RESTlr repo
+  category: examples
+  links: 
+    - rel: index
+      href: https://api.github.com/users/pke/repos

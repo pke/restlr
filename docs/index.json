@@ -1,0 +1,15 @@
+---
+title: RESTlr Example APIs for your pleasure
+layout: siren
+date : 2019-11-12
+description: A curated list of APIs to play around with
+total: site.data.apis.size
+---
+  "properties": {
+    "lastUpdated": "{{page.date}}",
+    "description": "{{page.description}}",
+    "total": "{{ site.data.apis.size }}"
+  },
+  "entities": [
+    {%- include categories.json -%}
+  ]

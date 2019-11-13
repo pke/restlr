@@ -1,0 +1,4 @@
+{% for item in site.data.apis %}
+  {%- include entity.json entity=item rel="item" -%}
+  {% unless forloop.last %},{% endunless %}
+{% endfor %}
