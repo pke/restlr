@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>RESTlr</title>
+  <style>
+    .flex {
+      display: flex;
+      flex-direction: row;
+    }
+  </style>
+  <script src="https://unpkg.com/canvas-gauges@2.1.5/gauge.min.js"></script>
+  <script type="module">
+    import { h, render } from 'https://unpkg.com/preact@latest?module'
+    import { useEffect, useState, useCallback, useRef } from 'https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module'
+    import htm from "https://unpkg.com/htm@latest/dist/htm.module.js?module"
+
+    const html = htm.bind(h)
+
+    function useFetch({
+      method = "GET",
+      autoFetch = true,
+      href,
+      body
+    }) {
+      const [loading, setLoading] = useState(false)
+      const [error, setError] = useState()
+      const [response, setResponse] = useState()
+      const [isCancelled, cancel] = useState()
+      const [json, setJson] = useState({})
+
+      const fixHref = href => /localhost:/.test(href) ? href : href.replace("http://", "https://")
+
+      const sendRequest = async ({href, body, method}) => {
+        try {
+          setLoading(true)
+          setError(undefined)
+          const response = await fetch(fixHref(href), {
+            method,
+            redirect: "follow",
+            headers: {
+              "Content-Type": body ? "application/x-www-form-urlencoded" : "text/plain",
+            },
+            body
+          })
+          const json = await response.json()
+          if (!isCancelled) {
+            setJson(json)
+            setResponse(response)
+          }
+          return json
+        } catch (err) {
+          if (!isCancelled) {
+            setError(err)
+          }
+          throw err
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      if (autoFetch) {
+        useEffect(() => {
+          sendRequest({href, method, body})
+          return () => cancel(true)
+        }, [])
+      }
+
+      return [{
+        loading,
+        response,
+        error,
+        json
+      }, 
+        sendRequest
+      ]
+    }
+
+    function useSiren(json) {
+      const [{ entities = [], actions = [], links, title, properties = {} }, setSiren] = useState(json)
+      useEffect(() => {
+        setSiren(json)
+      }, [json])
+      const state = (entities.find(entity => entity.class === "state")) || {}
+      return [
+        {
+          properties,
+          title,
+          links,
+          state,
+          actions
+        },
+        setSiren
+      ]
+    }
+
+    function Field({type, name, value, label}) {
+      return (
+        html`<label for=${name}>${label}</label><input id=${name} name=${name} type=${type} value=${value}/>`
+      )
+    }
+
+    function toPostData(data) {
+      return Object.keys(data).map(key => `${key}=${data[key]}`).join("&")
+    }
+
+    function TempGauge(props) {
+      return (
+        html`<canvas 
+        data-type="linear-gauge"
+        data-width="120"
+        data-height="400"
+        data-borders="0"
+        data-bar-stroke-width="20"
+        data-minor-ticks="10"
+        data-major-ticks="0,10,20,30,40,50,60,70,80,90,100"
+        data-value=${props.temp}
+        data-units="°C/F"
+        data-color-value-box-shadow="true"
+        ></canvas>`
+      )
+    }
+
+    function Action(props) {
+      const [{ loading, error, json }, sendRequest] = useFetch({ autoFetch: false, href: props.href, method: props.method })
+      const submit = event => {
+        event.preventDefault()
+        const form = event.srcElement
+        const formData = Array.from(form.elements).reduce((formData, element) => {
+          if (element.type !== "submit") {
+            formData[element.name] = element.value
+          }
+          return formData
+        }, {})
+        sendRequest({
+          href: props.href,
+          method: props.method,
+          body: toPostData(formData)}
+        ).then(props.onRefresh)
+      }
+      return (
+        html`
+          <form action=${props.href} method=${props.method} type=${props.type || "application/x-www-form-urlencoded"} onSubmit=${submit}>
+            ${props.fields.map(field => 
+              html`<${Field} name=${field.name} label=${field.title||field.name} value=${field.value} type=${field.type}/>`
+            )}
+            <input type="submit" disabled=${loading} value=${props.title}/>
+          </form>
+        `
+      )
+    }
+
+    function StateChart(props) {
+      const [{ loading, json }, sendRequest] = useFetch({ href: props.href })
+      const [{ title, links, state, actions, properties }, setSiren] = useSiren(json)
+      const [{ current, setState }] = useState(state)
+      const [eventSource, setEventSource] = useState()
+
+      useEffect(() => {
+        sendRequest({ href: props.href })
+      }, [props.href])
+
+      useEffect(() => {
+        if (Array.isArray(links)) {
+          setEventSource(links[0].href.replace("http://", "https://") + "/events")
+        }
+      }, [links])
+
+      useEffect(() => {
+        if (eventSource) {
+          const event = new EventSource(eventSource)
+          event.addEventListener("change", message => {
+            setSiren(JSON.parse(message.data))
+          })
+          return () => event.close()
+        }
+      }, [eventSource])
+
+      const refresh = () => sendRequest({ href: props.href })
+
+      return (
+        html`
+          <h1>${title}</h1>
+          <section class="flex">
+            <div>${properties && properties.temp !== undefined && html`<${TempGauge} temp=${properties.temp}/>`}</div>
+            <div>
+              ${!loading && html`<div>Context: ${JSON.stringify(properties)}</div>`}
+              <div>State: ${loading ? "Loading..." : (state.properties && state.properties.value)}</div>
+            </div>
+          </section>
+          <section>
+            ${actions.map(action =>
+              html`<${Action} 
+                href=${action.href}
+                title=${action.title || action.name}
+                method=${action.method}
+                fields=${action.fields}
+                type=${action.type}
+                onRefresh=${setSiren}/>
+              `
+            )}
+            <button disabled=${loading} onClick=${refresh}>
+              REFRESH
+            </button>
+          </section>
+        `
+      )
+    }
+
+    const baseUrl = localStorage.lastSource || "https://restlr.io/countdown"
+    //const baseUrl = "http://localhost:3000/kettle"
+
+    function App() {
+      const sourceInputRef = useRef(null)
+      const [ source, setSource ] = useState()
+      const [ service, setService ] = useState()
+
+      /*useEffect(() => {
+        if (source) {
+          fetch
+        }
+      }, [source])*/
+
+      const onSourceUrlSubmit = event => {
+        event.preventDefault()
+        localStorage.lastSource = sourceInputRef.current.value
+        setSource(sourceInputRef.current.value)
+      }
+
+      return (
+        html`
+          <form onSubmit=${onSourceUrlSubmit}>
+            <label for="source">Source: </label>
+            <input ref=${sourceInputRef} id="source" name="source" type="url" value=${baseUrl}/>
+            <input type="submit" value="Load"/>
+          </form>
+          ${source && html`<${StateChart} href=${source}/>` }
+        `
+      );
+    }
+    render(html`<${App}/>`, document.body)
+  </script>
+</head>
+<body>
+</body>
+</html>
