@@ -18,6 +18,7 @@ module.exports = function partChoices(response, part) {
   if (count) {
     return {
       name: part,
+      role: "separator",
       message: `${part} (${count})`,
       choices: mapItems(items, choiceItem.bind(this, part))
     }
