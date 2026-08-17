@@ -3,3 +3,4 @@ node_modules
 hyperwizard
 docs/_site
 .env
+.tap
